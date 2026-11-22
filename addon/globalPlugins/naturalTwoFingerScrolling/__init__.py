@@ -15,6 +15,7 @@ import gui
 import gui.guiHelper
 import inputCore
 import mouseHandler
+import touchHandler
 import winUser
 import wx
 from gui.settingsDialogs import NVDASettingsDialog, SettingsPanel
@@ -202,7 +203,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		super().terminate()
 
 	def _onGesture(self, gesture):
-		# Any new input stops a running glide.
+		# Touch hovers fire right after the fingers lift and must not stop the
+		# glide. Keyboard input and taps do.
+		if isinstance(gesture, touchHandler.TouchInputGesture):
+			action = gesture.tracker.action
+			if action not in (touchHandler.TouchAction.TAP, touchHandler.TouchAction.TAP_AND_HOLD):
+				return True
 		self._cancelAnimation()
 		return True
 
@@ -248,7 +254,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _startGlideFromLift(self, velocityY):
 		# A tap or a very slow release should not produce momentum.
-		if abs(velocityY) < 120:
+		if abs(velocityY) < 80:
 			log.debug("NaturalScrolling: lift too slow for a glide (%.0f px/s)" % abs(velocityY))
 			return
 		settings = config.conf[ADDON_SECTION]

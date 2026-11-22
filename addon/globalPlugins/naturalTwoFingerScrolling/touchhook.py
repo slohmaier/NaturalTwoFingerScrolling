@@ -70,7 +70,7 @@ class TouchHook:
 		self._originalExecuteGesture = None
 		self._installed = False
 		self._session = None
-		self._lastTracker = None
+		self._endedAt = 0.0
 
 	def install(self):
 		if self._installed:
@@ -128,9 +128,17 @@ class TouchHook:
 		if not isinstance(gesture, touchHandler.TouchInputGesture):
 			return False
 		tracker = gesture.tracker
-		if tracker.numFingers != 2:
-			return False
 		if tracker.actionCount > 1:
+			return False
+		if tracker.numFingers != 2:
+			# Swallow leftover one-finger flicks right after a two-finger
+			# session, so a remaining finger cannot navigate or cancel the glide.
+			if (
+				tracker.numFingers == 1
+				and tracker.action in _MOVEMENT_ACTIONS
+				and time.time() - self._endedAt < 0.4
+			):
+				return True
 			return False
 		return tracker.action in _MOVEMENT_ACTIONS
 
@@ -139,12 +147,22 @@ class TouchHook:
 			if self._session is not None:
 				self._endSession()
 			return
+		if complete and completedTracker is not None and self._session is not None:
+			try:
+				_velocityX, velocityY = completedTracker.getVelocity()
+				self._session["liftVelocities"].append(velocityY)
+			except Exception:
+				log.debugWarning("NaturalScrolling: could not read lift velocity", exc_info=True)
 		activeTrackers = list(manager.singleTouchTrackersByID.values())
-		if complete:
-			self._lastTracker = completedTracker
-		if len(activeTrackers) != 2:
+		if not activeTrackers:
 			if self._session is not None:
 				self._endSession()
+			return
+		if len(activeTrackers) != 2:
+			if self._session is not None:
+				# One finger is still down or a third one joined; pause following
+				# until there are exactly two again.
+				self._session["lastY"] = None
 			return
 		averageX = sum(tracker.x for tracker in activeTrackers) / 2.0
 		averageY = sum(tracker.y for tracker in activeTrackers) / 2.0
@@ -154,12 +172,15 @@ class TouchHook:
 				"pending": 0.0,
 				"lastSend": 0.0,
 				"pixelsPerTick": max(1.0, float(self._getPixelsPerTick())),
+				"liftVelocities": [],
 			}
-			self._lastTracker = None
 			try:
 				self._onStart(averageX, averageY)
 			except Exception:
 				log.exception("NaturalScrolling: start callback failed")
+			return
+		if self._session["lastY"] is None:
+			self._session["lastY"] = averageY
 			return
 		deltaY = averageY - self._session["lastY"]
 		self._session["lastY"] = averageY
@@ -184,6 +205,7 @@ class TouchHook:
 
 	def _endSession(self):
 		session, self._session = self._session, None
+		self._endedAt = time.time()
 		if session is None:
 			return
 		if session["pending"]:
@@ -191,14 +213,8 @@ class TouchHook:
 				mouseHandler.scrollMouseWheel(int(session["pending"]), isVertical=True)
 			except Exception:
 				log.exception("NaturalScrolling: could not send the last wheel event")
-		velocityY = 0.0
-		tracker = self._lastTracker
-		self._lastTracker = None
-		if tracker is not None:
-			try:
-				_velocityX, velocityY = tracker.getVelocity()
-			except Exception:
-				log.debugWarning("NaturalScrolling: could not read lift velocity", exc_info=True)
+		velocities = session["liftVelocities"]
+		velocityY = max(velocities, key=abs) if velocities else 0.0
 		try:
 			self._onLift(velocityY)
 		except Exception:

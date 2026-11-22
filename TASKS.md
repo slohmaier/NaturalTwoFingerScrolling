@@ -15,6 +15,15 @@
 - 2026-11-22: 0.2.0: live touch tracking. Wraps `touchTracker.TrackerManager.update`
   to follow the fingers and `inputCore.InputManager.executeGesture` to swallow
   two-finger movement gestures. Taps stay with NVDA. Momentum tail at lift.
+- 2026-11-22: First working live scrolling, marked by git tag
+  `v0.2.0-first-working` (recorded as "first working natural 3 finger scroll"
+  in the user's words; the implementation itself follows two fingers).
+- 2026-11-22: Glide after lift fixed: session ends at the last finger, fastest
+  lift velocity wins, touch hovers no longer cancel the glide, stray one-finger
+  flicks after a session are swallowed, threshold lowered to 80 px/s.
+- 2026-11-22: Glide after lift fixed: session ends at the last finger, fastest
+  lift velocity wins, touch hovers no longer cancel the glide, stray one-finger
+  flicks after a session are swallowed, threshold lowered to 80 px/s.
 
 ## Open
 
