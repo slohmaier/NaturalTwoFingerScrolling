@@ -1,0 +1,29 @@
+addon/doc/*.css
+addon/doc/en/
+*_docHandler.py
+*.html
+*.ini
+*.mo
+*.pot
+*.py[co]
+*.nvda-addon
+.sconsign.dblite
+
+#nvda modules
+addonHandler/
+appModules/
+bla
+config/
+gui/
+speech/
+utils/
+.vscode
+.venv
+.claude/
+tmpclaude-*
+nul
+
+# tests
+.pytest_cache/
+__pycache__/
+

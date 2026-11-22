@@ -1,0 +1,101 @@
+# German translation for the Natural 2-finger scrolling add-on.
+# Copyright (C) 2026 Stefan Lohmaier
+# This file is distributed under the same license as the add-on.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: naturalTwoFingerScrolling 0.1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-11-22 07:50+0100\n"
+"PO-Revision-Date: 2026-11-22 08:00+0100\n"
+"Last-Translator: Stefan Lohmaier <stefan@slohmaier.de>\n"
+"Language-Team: German <de@li.org>\n"
+"Language: de\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#. : Translation context for the script category, matches NVDA's built-in one.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:38
+msgid "Touch screen"
+msgstr "Touchscreen"
+
+#. Translators: Title of the settings category for this add-on.
+#. Add-on summary, usually the user visible name of the addon.
+#. Translators: Summary for this add-on
+#. to be shown on installation and add-on information found in Add-ons Manager.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:64
+#: buildVars.py:23
+msgid "Natural 2-finger scrolling"
+msgstr "Natürliches Scrollen mit zwei Fingern"
+
+#. Translators: Label for the scroll direction choice.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:71
+msgid "Scroll direction:"
+msgstr "Scrollrichtung:"
+
+#. Translators: Direction option, matching phone and tablet behaviour.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:74
+msgid "Natural (flick up scrolls forward)"
+msgstr "Natürlich (Wischen nach oben scrollt vorwärts)"
+
+#. Translators: Direction option, matching the traditional desktop direction.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:76
+msgid "Traditional (flick down scrolls forward)"
+msgstr "Traditionell (Wischen nach unten scrollt vorwärts)"
+
+#. Translators: Label for the speed spin control.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:86
+msgid "Scroll speed in percent:"
+msgstr "Scrollgeschwindigkeit in Prozent:"
+
+#. Translators: Label for the pointer behaviour choice.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:96
+msgid "Pointer behaviour:"
+msgstr "Mauszeigerverhalten:"
+
+#. Translators: Move the mouse pointer to the touch point and leave it there.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:99
+msgid "Move to the touch point and keep it there"
+msgstr "Zum Berührungspunkt bewegen und dort lassen"
+
+#. Translators: Move the mouse pointer to the touch point, then restore it.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:101
+msgid "Move to the touch point, restore the pointer afterwards"
+msgstr "Zum Berührungspunkt bewegen und den Mauszeiger danach zurücksetzen"
+
+#. Translators: Do not move the mouse pointer at all.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:103
+msgid "Do not move the pointer"
+msgstr "Mauszeiger nicht bewegen"
+
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:116
+msgid ""
+"Send only full wheel notches (for applications that ignore partial scrolling)"
+msgstr "Nur ganze Mausradstufen senden (für Anwendungen, die Teilschritte ignorieren)"
+
+#. Translators: Description of the two finger flick up gesture.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:244
+msgid "Scrolls the content under the fingers forward, with momentum"
+msgstr "Scrollt den Inhalt unter den Fingern mit Schwung vorwärts"
+
+#. Translators: Description of the two finger flick down gesture.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:257
+msgid "Scrolls the content under the fingers backward, with momentum"
+msgstr "Scrollt den Inhalt unter den Fingern mit Schwung rückwärts"
+
+#: buildVars.py:27
+msgid ""
+"Momentum scrolling with two fingers on a touch screen.\n"
+"Flick up or down with two fingers to scroll the content under your fingers.\n"
+"The scroll speed follows the flick speed and the content keeps gliding "
+"briefly\n"
+"after your fingers leave the screen, similar to a phone or tablet."
+msgstr ""
+"Schwungvolles Scrollen mit zwei Fingern auf einem Touchscreen.\n"
+"Wischen Sie mit zwei Fingern nach oben oder unten, um den Inhalt unter Ihren "
+"Fingern zu scrollen.\n"
+"Die Scrollgeschwindigkeit folgt der Wischgeschwindigkeit, und der Inhalt "
+"gleitet nach dem Abheben der Finger kurz weiter, ähnlich wie bei einem "
+"Telefon oder Tablet."
