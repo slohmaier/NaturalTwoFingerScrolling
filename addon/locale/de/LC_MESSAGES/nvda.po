@@ -108,6 +108,30 @@ msgid ""
 "sequence"
 msgstr "Scrollt den Inhalt unter den Fingern nach einem schnellen Zwei-Finger-Wisch vorwärts"
 
+#. Translators: Description of the double tap activation with click fallback.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:400
+msgid ""
+"Activates the object under the fingers, or clicks it when it has no "
+"accessibility action"
+msgstr "Aktiviert das Objekt unter den Fingern oder klickt es an, wenn es keine Aktion anbietet"
+
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:421
+msgid "Activate"
+msgstr "Aktivieren"
+
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:427
+msgid "Click"
+msgstr "Klicken"
+
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:429
+msgid "No action"
+msgstr "Keine Aktion"
+
+#. Translators: Description of the double tap and hold gesture.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:431
+msgid "Opens the context menu at the touched position"
+msgstr "Öffnet das Kontextmenü an der berührten Stelle"
+
 #: buildVars.py:27
 msgid ""
 "Momentum scrolling with two fingers on a touch screen.\n"

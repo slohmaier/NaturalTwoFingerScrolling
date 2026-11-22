@@ -8,6 +8,7 @@ import addonHandler
 
 addonHandler.initTranslation()
 
+import api
 import config
 import core
 import globalPluginHandler
@@ -16,11 +17,13 @@ import gui.guiHelper
 import inputCore
 import mouseHandler
 import touchHandler
+import ui
 import winUser
 import wx
 from gui.settingsDialogs import NVDASettingsDialog, SettingsPanel
 from logHandler import log
 from scriptHandler import script
+from utils.security import objectBelowLockScreenAndWindowsIsLocked
 
 from . import momentum
 from . import touchhook
@@ -388,3 +391,67 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	)
 	def script_scrollWithSequentialUp(self, gesture):
 		self._scroll(gesture, flickUp=True, fixedTicks=_SEQUENTIAL_TICKS)
+
+	def _clickAt(self, x, y, secondary=False):
+		try:
+			winUser.setCursorPos(int(x), int(y))
+			if secondary:
+				mouseHandler.doSecondaryClick()
+			else:
+				mouseHandler.doPrimaryClick()
+			return True
+		except Exception:
+			log.exception("NaturalScrolling: could not click at the touch position")
+			return False
+
+	@script(
+		# Translators: Description of the double tap activation with click fallback.
+		description=_(
+			"Activates the object under the fingers, or clicks it when it has no accessibility action",
+		),
+		category=SCRCAT_TOUCH,
+		gesture="ts:double_tap",
+	)
+	def script_activateWithFallback(self, gesture):
+		pos = api.getReviewPosition()
+		if objectBelowLockScreenAndWindowsIsLocked(pos.obj):
+			return
+		try:
+			pos.activate()
+			if isinstance(gesture, touchHandler.TouchInputGesture):
+				touchHandler.handler.notifyInteraction(pos.NVDAObjectAtStart)
+			ui.message(_("Activate"))
+			return
+		except NotImplementedError:
+			pass
+		obj = api.getNavigatorObject()
+		while obj and not objectBelowLockScreenAndWindowsIsLocked(obj):
+			try:
+				actionName = obj.getActionName()
+			except Exception:
+				actionName = _("Activate")
+			try:
+				obj.doAction()
+				if isinstance(gesture, touchHandler.TouchInputGesture):
+					touchHandler.handler.notifyInteraction(obj)
+				ui.message(actionName)
+				return
+			except NotImplementedError:
+				pass
+			obj = obj.parent
+		if isinstance(gesture, touchHandler.TouchInputGesture):
+			if self._clickAt(gesture.x, gesture.y):
+				ui.message(_("Click"))
+				return
+		ui.message(_("No action"))
+
+	@script(
+		# Translators: Description of the double tap and hold gesture.
+		description=_("Opens the context menu at the touched position"),
+		category=SCRCAT_TOUCH,
+		gesture="ts:double_tapAndHold",
+	)
+	def script_rightClickAtTouch(self, gesture):
+		if objectBelowLockScreenAndWindowsIsLocked(api.getNavigatorObject()):
+			return
+		self._clickAt(gesture.x, gesture.y, secondary=True)
