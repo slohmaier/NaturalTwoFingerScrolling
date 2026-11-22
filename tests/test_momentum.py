@@ -20,9 +20,9 @@ momentum = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(momentum)
 
 
-def test_ticks_are_clamped_to_at_least_one():
-	assert momentum.ticksForVelocity(0) == 1.0
-	assert momentum.ticksForVelocity(-500) == 1.0
+def test_ticks_have_a_minimum_and_use_absolute_speed():
+	assert momentum.ticksForVelocity(0) == 2.0
+	assert momentum.ticksForVelocity(-500) == momentum.ticksForVelocity(500) == 2.5
 
 
 def test_ticks_grow_with_velocity():
@@ -32,17 +32,25 @@ def test_ticks_grow_with_velocity():
 
 
 def test_ticks_respect_maximum():
-	assert momentum.ticksForVelocity(100000, maxTicks=6) == 6.0
+	assert momentum.ticksForVelocity(100000, maxTicks=15) == 15.0
 
 
 def test_speed_percentage_scales_ticks():
-	assert momentum.ticksForVelocity(1400, speedPercent=200) == 4.0
+	assert momentum.ticksForVelocity(1400, speedPercent=200) == 14.0
+
+
+def test_duration_grows_with_ticks_and_is_capped():
+	short = momentum.durationForTicks(2)
+	long = momentum.durationForTicks(10)
+	assert short < long
+	assert long <= momentum.DURATION_MAX_MS
+	assert momentum.durationForTicks(1000) == momentum.DURATION_MAX_MS
 
 
 def test_steps_sum_to_total():
-	steps = momentum.buildSteps(6, durationMs=320, intervalMs=16)
-	assert len(steps) == 20
-	assert abs(sum(steps) - 6) < 1e-9
+	total = 10
+	steps = momentum.buildSteps(total, durationMs=momentum.durationForTicks(total))
+	assert abs(sum(steps) - total) < 1e-9
 
 
 def test_steps_decrease_monotonically():

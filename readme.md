@@ -30,7 +30,10 @@ The add-on adds a category "Natural 2-finger scrolling" to NVDA's settings:
 ## Interaction with NVDA
 
 The add-on binds the two-finger flick up and down gestures in the text, object
-and browse touch modes. NVDA's own bindings for those gestures, which cycle the
+and browse touch modes, plus the sequential two-finger gestures that NVDA forms
+when two quick flicks follow each other. For those sequences the direction of
+the second flick wins, so a quick up-then-down scrolls backward instead of
+being swallowed. NVDA's own bindings for the plain flicks, which cycle the
 review modes, are therefore not executed while the add-on is active. The
 review mode commands remain available and can be bound to other gestures, for
 example three-finger flicks, in NVDA's Input Gestures dialog.

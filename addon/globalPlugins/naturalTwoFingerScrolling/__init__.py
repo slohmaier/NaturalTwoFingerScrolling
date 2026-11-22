@@ -29,7 +29,7 @@ ADDON_SECTION = "naturalTwoFingerScrolling"
 CONFIG_SPEC = {
 	"direction": "option('natural', 'traditional', default='natural')",
 	"speed": "integer(20, 400, default=100)",
-	"maxTicks": "integer(1, 12, default=6)",
+	"maxTicks": "integer(1, 30, default=15)",
 	"pointer": "option('keep', 'restore', 'off', default='keep')",
 	"fullNotches": "boolean(default=False)",
 }
@@ -39,6 +39,24 @@ SCRCAT_TOUCH = _("Touch screen")
 
 _DIRECTION_KEYS = ("natural", "traditional")
 _POINTER_KEYS = ("keep", "restore", "off")
+
+#: Fixed amount of wheel ticks for sequential two-finger flicks, where no
+#: reliable velocity is available.
+_SEQUENTIAL_TICKS = 4.0
+
+#: Sequential two-finger gestures whose second flick points down.
+_SEQUENTIAL_END_DOWN = tuple(
+	"ts(%s):2finger_%s" % (mode, action)
+	for mode in ("text", "object", "browse")
+	for action in ("flickupthendown", "flickrightthendown", "flickleftthendown")
+)
+
+#: Sequential two-finger gestures whose second flick points up.
+_SEQUENTIAL_END_UP = tuple(
+	"ts(%s):2finger_%s" % (mode, action)
+	for mode in ("text", "object", "browse")
+	for action in ("flickdownthenup", "flickrightthenup", "flickleftthenup")
+)
 
 
 def _fingerVelocity(gesture):
@@ -181,28 +199,40 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if settings["pointer"] == "restore":
 			self._restorePosition = oldPosition
 
-	def _scroll(self, gesture, flickUp):
+	def _scroll(self, gesture, flickUp, fixedTicks=None):
 		self._cancelAnimation()
 		settings = config.conf[ADDON_SECTION]
 		_velocityX, velocityY = _fingerVelocity(gesture)
-		totalTicks = momentum.ticksForVelocity(
-			velocityY,
-			speedPercent=settings["speed"],
-			maxTicks=settings["maxTicks"],
-		)
+		if fixedTicks is None:
+			totalTicks = momentum.ticksForVelocity(
+				velocityY,
+				speedPercent=settings["speed"],
+				maxTicks=settings["maxTicks"],
+			)
+		else:
+			totalTicks = float(fixedTicks)
 		natural = settings["direction"] == "natural"
 		forward = flickUp if natural else not flickUp
 		# Wheel up is positive and scrolls backwards, wheel down scrolls forwards.
 		self._sign = -1 if forward else 1
 		self._fullNotches = settings["fullNotches"]
 		self._movePointer(gesture.x, gesture.y)
-		self._steps = momentum.buildSteps(totalTicks)
+		durationMs = momentum.durationForTicks(totalTicks)
+		self._steps = momentum.buildSteps(totalTicks, durationMs=durationMs)
 		self._stepIndex = 0
 		self._pendingDelta = 0.0
 		self._generation += 1
-		log.debug(
-			"Natural 2-finger scrolling: velocity %.0f px/s, %.2f ticks, %d steps"
-			% (abs(velocityY), totalTicks, len(self._steps)),
+		log.info(
+			"NaturalScrolling: %s mode=%s v=%.0f px/s ticks=%.2f duration=%dms pointer=(%d,%d)"
+			% (
+				gesture.identifiers[0],
+				getattr(gesture, "mode", "?"),
+				abs(velocityY),
+				totalTicks,
+				durationMs,
+				gesture.x,
+				gesture.y,
+			),
 		)
 		core.callLater(momentum.INTERVAL_MS, self._step, self._generation)
 
@@ -264,3 +294,21 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	)
 	def script_scrollWithFlickDown(self, gesture):
 		self._scroll(gesture, flickUp=False)
+
+	@script(
+		# Translators: Description of the sequential two finger gesture ending in a downward flick.
+		description=_("Scrolls the content under the fingers backward after a quick two finger flick sequence"),
+		category=SCRCAT_TOUCH,
+		gestures=_SEQUENTIAL_END_DOWN,
+	)
+	def script_scrollWithSequentialDown(self, gesture):
+		self._scroll(gesture, flickUp=False, fixedTicks=_SEQUENTIAL_TICKS)
+
+	@script(
+		# Translators: Description of the sequential two finger gesture ending in an upward flick.
+		description=_("Scrolls the content under the fingers forward after a quick two finger flick sequence"),
+		category=SCRCAT_TOUCH,
+		gestures=_SEQUENTIAL_END_UP,
+	)
+	def script_scrollWithSequentialUp(self, gesture):
+		self._scroll(gesture, flickUp=True, fixedTicks=_SEQUENTIAL_TICKS)
