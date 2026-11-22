@@ -24,6 +24,10 @@
 - 2026-11-22: Published to GitHub:
   https://github.com/slohmaier/NaturalTwoFingerScrolling, release v0.2.0 with
   the packaged add-on attached.
+- 2026-11-22: Double tap activation with click fallback for objects without an
+  accessibility action (for example Windows 11 taskbar icons).
+- 2026-11-22: Double tap and hold bound to a context menu at the touch point.
+- 2026-11-22: Published release v0.2.1 with the packaged add-on attached.
 
 ## Open
 
