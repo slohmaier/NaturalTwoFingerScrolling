@@ -22,6 +22,7 @@ from logHandler import log
 from scriptHandler import script
 
 from . import momentum
+from . import touchhook
 
 ADDON_SECTION = "naturalTwoFingerScrolling"
 
@@ -32,6 +33,8 @@ CONFIG_SPEC = {
 	"maxTicks": "integer(1, 30, default=15)",
 	"pointer": "option('keep', 'restore', 'off', default='keep')",
 	"fullNotches": "boolean(default=False)",
+	"follow": "boolean(default=True)",
+	"followPixelsPerTick": "integer(20, 200, default=55)",
 }
 
 #: Translation context for the script category, matches NVDA's built-in one.
@@ -136,12 +139,33 @@ class NaturalScrollingPanel(SettingsPanel):
 		)
 		self.fullNotchesCheckBox.SetValue(settings["fullNotches"])
 
+		# Translators: Check box to enable live following of the fingers.
+		self.followCheckBox = helper.addItem(
+			wx.CheckBox(
+				self,
+				label=_("Content follows the two fingers while they move"),
+			),
+		)
+		self.followCheckBox.SetValue(settings["follow"])
+
+		# Translators: Label for the follow sensitivity spin control.
+		followLabel = _("Pixels per wheel tick while following:")
+		self.followPixelsControl = helper.addLabeledControl(
+			followLabel,
+			wx.SpinCtrl,
+			min=20,
+			max=200,
+			initial=settings["followPixelsPerTick"],
+		)
+
 	def onSave(self):
 		settings = config.conf[ADDON_SECTION]
 		settings["direction"] = _DIRECTION_KEYS[self.directionChoice.GetSelection()]
 		settings["speed"] = self.speedControl.GetValue()
 		settings["pointer"] = _POINTER_KEYS[self.pointerChoice.GetSelection()]
 		settings["fullNotches"] = self.fullNotchesCheckBox.GetValue()
+		settings["follow"] = self.followCheckBox.GetValue()
+		settings["followPixelsPerTick"] = self.followPixelsControl.GetValue()
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -155,10 +179,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._sign = 0
 		self._fullNotches = False
 		self._restorePosition = None
+		self._hook = touchhook.TouchHook(
+			isEnabled=lambda: config.conf[ADDON_SECTION]["follow"],
+			getPixelsPerTick=lambda: config.conf[ADDON_SECTION]["followPixelsPerTick"],
+			onStart=self._onTouchStart,
+			onLift=self._onTouchLift,
+		)
+		self._hook.install()
 		inputCore.decide_executeGesture.register(self._onGesture)
 		NVDASettingsDialog.categoryClasses.append(NaturalScrollingPanel)
 
 	def terminate(self):
+		if self._hook is not None:
+			self._hook.terminate()
+			self._hook = None
 		inputCore.decide_executeGesture.unregister(self._onGesture)
 		self._cancelAnimation()
 		try:
@@ -199,8 +233,51 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if settings["pointer"] == "restore":
 			self._restorePosition = oldPosition
 
-	def _scroll(self, gesture, flickUp, fixedTicks=None):
+	def _onTouchStart(self, x, y):
+		# Called from the touch thread when a two-finger session begins.
 		self._cancelAnimation()
+		self._movePointer(int(x), int(y))
+		log.info(
+			"NaturalScrolling: follow start pointer=(%d,%d) px/tick=%d"
+			% (x, y, config.conf[ADDON_SECTION]["followPixelsPerTick"]),
+		)
+
+	def _onTouchLift(self, velocityY):
+		# Called from the touch thread when the two fingers leave the screen.
+		core.callLater(0, self._startGlideFromLift, velocityY)
+
+	def _startGlideFromLift(self, velocityY):
+		# A tap or a very slow release should not produce momentum.
+		if abs(velocityY) < 120:
+			log.debug("NaturalScrolling: lift too slow for a glide (%.0f px/s)" % abs(velocityY))
+			return
+		settings = config.conf[ADDON_SECTION]
+		totalTicks = momentum.ticksForVelocity(
+			velocityY,
+			speedPercent=settings["speed"],
+			maxTicks=settings["maxTicks"],
+		)
+		# Fingers moving up mean the content scrolls forward, which is a
+		# negative wheel delta.
+		sign = -1 if velocityY < 0 else 1
+		log.info(
+			"NaturalScrolling: lift v=%.0f px/s ticks=%.2f sign=%d"
+			% (abs(velocityY), totalTicks, sign),
+		)
+		self._startGlide(totalTicks, sign)
+
+	def _startGlide(self, totalTicks, sign):
+		self._cancelAnimation()
+		self._fullNotches = config.conf[ADDON_SECTION]["fullNotches"]
+		self._sign = sign
+		durationMs = momentum.durationForTicks(totalTicks)
+		self._steps = momentum.buildSteps(totalTicks, durationMs=durationMs)
+		self._stepIndex = 0
+		self._pendingDelta = 0.0
+		self._generation += 1
+		core.callLater(momentum.INTERVAL_MS, self._step, self._generation)
+
+	def _scroll(self, gesture, flickUp, fixedTicks=None):
 		settings = config.conf[ADDON_SECTION]
 		_velocityX, velocityY = _fingerVelocity(gesture)
 		if fixedTicks is None:
@@ -214,27 +291,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		natural = settings["direction"] == "natural"
 		forward = flickUp if natural else not flickUp
 		# Wheel up is positive and scrolls backwards, wheel down scrolls forwards.
-		self._sign = -1 if forward else 1
-		self._fullNotches = settings["fullNotches"]
+		sign = -1 if forward else 1
 		self._movePointer(gesture.x, gesture.y)
-		durationMs = momentum.durationForTicks(totalTicks)
-		self._steps = momentum.buildSteps(totalTicks, durationMs=durationMs)
-		self._stepIndex = 0
-		self._pendingDelta = 0.0
-		self._generation += 1
 		log.info(
-			"NaturalScrolling: %s mode=%s v=%.0f px/s ticks=%.2f duration=%dms pointer=(%d,%d)"
+			"NaturalScrolling: %s mode=%s v=%.0f px/s ticks=%.2f pointer=(%d,%d)"
 			% (
 				gesture.identifiers[0],
 				getattr(gesture, "mode", "?"),
 				abs(velocityY),
 				totalTicks,
-				durationMs,
 				gesture.x,
 				gesture.y,
 			),
 		)
-		core.callLater(momentum.INTERVAL_MS, self._step, self._generation)
+		self._startGlide(totalTicks, sign)
 
 	def _step(self, generation):
 		if generation != self._generation or self._stepIndex >= len(self._steps):

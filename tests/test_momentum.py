@@ -60,3 +60,9 @@ def test_steps_decrease_monotonically():
 
 def test_empty_for_zero_ticks():
 	assert momentum.buildSteps(0) == []
+
+
+def test_movement_units_follow_direction_and_scale():
+	assert momentum.unitsForMovement(-55, 55) == -120.0
+	assert momentum.unitsForMovement(55, 55) == 120.0
+	assert momentum.unitsForMovement(-27.5, 55) == -60.0

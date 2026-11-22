@@ -20,6 +20,19 @@ PIXELS_PER_TICK = 200.0
 #: Falloff exponent. Higher values concentrate the movement at the beginning.
 DECAY = 1.8
 
+#: Wheel delta units per notch, as defined by Windows.
+WHEEL_DELTA_UNITS = 120
+
+
+def unitsForMovement(deltaPixels, pixelsPerTick=55.0):
+	"""Convert a finger movement in pixels into wheel delta units.
+
+	Negative input (fingers moving up) yields negative units, which scroll the
+	content forward, matching the behaviour of a touch screen.
+	"""
+	pixels = max(1.0, float(pixelsPerTick))
+	return float(deltaPixels) / pixels * WHEEL_DELTA_UNITS
+
 
 def ticksForVelocity(velocityPxPerSecond, speedPercent=100.0, maxTicks=15.0):
 	"""Convert a measured flick velocity into a number of wheel ticks.

@@ -3,10 +3,18 @@
 An NVDA add-on that gives touch screens momentum scrolling with two fingers,
 similar to a phone or tablet.
 
-NVDA normally turns a touch gesture into a single mouse wheel notch. This
-add-on measures how fast you flick, moves the mouse pointer to the point
-between your fingers, and scrolls the content there with a short glide that
-decelerates after your fingers leave the screen.
+The add-on follows your two fingers while they move: the content under the
+fingers scrolls with them. When the fingers leave the screen, the measured
+speed continues as a short gliding tail.
+
+To do this it wraps NVDA's raw touch tracker and takes over two-finger
+movement gestures. NVDA's own actions for those gestures (review mode cycling,
+two-finger document navigation) do not run while the add-on is active. Taps
+stay with NVDA: two-finger tap still stops speech, two-finger double tap still
+opens the NVDA menu, one-finger exploration is untouched.
+
+If the wrapping is unavailable, for example after a future NVDA change, the
+add-on falls back to scrolling after the finished flick.
 
 ## Usage
 
@@ -21,11 +29,13 @@ By default a flick up scrolls forward, like Android and iOS.
 The add-on adds a category "Natural 2-finger scrolling" to NVDA's settings:
 
 - Scroll direction: natural (flick up scrolls forward) or traditional.
-- Scroll speed in percent: scales the distance for a given flick speed.
+- Scroll speed in percent: scales the gliding tail for a given lift speed.
 - Pointer behaviour: keep the pointer at the touch point, restore it after
   the glide, or leave the pointer alone.
 - Send only full wheel notches: for applications that ignore partial wheel
   deltas.
+- Content follows the two fingers while they move, and the sensitivity in
+  pixels per wheel tick for that follow phase.
 
 ## Interaction with NVDA
 

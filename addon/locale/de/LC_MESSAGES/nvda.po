@@ -85,6 +85,29 @@ msgstr "Scrollt den Inhalt unter den Fingern mit Schwung vorwärts"
 msgid "Scrolls the content under the fingers backward, with momentum"
 msgstr "Scrollt den Inhalt unter den Fingern mit Schwung rückwärts"
 
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:146
+msgid "Content follows the two fingers while they move"
+msgstr "Der Inhalt folgt den zwei Fingern während der Bewegung"
+
+#. Translators: Label for the follow sensitivity spin control.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:152
+msgid "Pixels per wheel tick while following:"
+msgstr "Pixel pro Mausradstufe beim Folgen:"
+
+#. Translators: Description of the sequential two finger gesture ending in a downward flick.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:362
+msgid ""
+"Scrolls the content under the fingers backward after a quick two finger "
+"flick sequence"
+msgstr "Scrollt den Inhalt unter den Fingern nach einem schnellen Zwei-Finger-Wisch rückwärts"
+
+#. Translators: Description of the sequential two finger gesture ending in an upward flick.
+#: addon\globalPlugins\naturalTwoFingerScrolling\__init__.py:371
+msgid ""
+"Scrolls the content under the fingers forward after a quick two finger flick "
+"sequence"
+msgstr "Scrollt den Inhalt unter den Fingern nach einem schnellen Zwei-Finger-Wisch vorwärts"
+
 #: buildVars.py:27
 msgid ""
 "Momentum scrolling with two fingers on a touch screen.\n"
