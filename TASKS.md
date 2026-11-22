@@ -21,9 +21,9 @@
 - 2026-11-22: Glide after lift fixed: session ends at the last finger, fastest
   lift velocity wins, touch hovers no longer cancel the glide, stray one-finger
   flicks after a session are swallowed, threshold lowered to 80 px/s.
-- 2026-11-22: Glide after lift fixed: session ends at the last finger, fastest
-  lift velocity wins, touch hovers no longer cancel the glide, stray one-finger
-  flicks after a session are swallowed, threshold lowered to 80 px/s.
+- 2026-11-22: Published to GitHub:
+  https://github.com/slohmaier/NaturalTwoFingerScrolling, release v0.2.0 with
+  the packaged add-on attached.
 
 ## Open
 
@@ -32,5 +32,5 @@
 - Check whether Brave honours partial wheel deltas; if not, use the full notch option.
 - Downgrade the `NaturalScrolling:` log lines from info to debug once tuning is done.
 - Verify that `enhancedTouchGestures` synth settings touch mode is not captured and that load order is irrelevant.
-- Publish to GitHub and the NVDA Add-on Store once the add-on feels right.
+- Publish to the NVDA Add-on Store once the add-on feels right.
 - Consider proposing kinetic touch scrolling upstream to NV Access.

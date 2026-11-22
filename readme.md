@@ -16,6 +16,12 @@ opens the NVDA menu, one-finger exploration is untouched.
 If the wrapping is unavailable, for example after a future NVDA change, the
 add-on falls back to scrolling after the finished flick.
 
+## Download
+
+The latest packaged add-on is attached to the releases:
+
+https://github.com/slohmaier/NaturalTwoFingerScrolling/releases
+
 ## Usage
 
 Flick up or down with two fingers over the content you want to scroll. The
