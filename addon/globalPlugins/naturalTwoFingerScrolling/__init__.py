@@ -16,7 +16,6 @@ import gui
 import gui.guiHelper
 import inputCore
 import mouseHandler
-import subprocess
 import touchHandler
 import ui
 import winUser
@@ -48,42 +47,6 @@ SCRCAT_TOUCH = _("Touch screen")
 
 _DIRECTION_KEYS = ("natural", "traditional")
 _POINTER_KEYS = ("keep", "restore", "off")
-
-#: Window classes of the Windows lock screen, see utils.security.
-_LOCK_SCREEN_CLASSES = frozenset(
-	{
-		"LockScreenInputOcclusionFrame",
-		"LockScreenControllerProxyWindow",
-		"LockScreenBackstopFrame",
-	}
-)
-
-#: Narrator executable, used on the lock screen.
-NARRATOR_PATH = r"C:\Windows\System32\Narrator.exe"
-
-
-def _lockScreenWindowsVisible():
-	"""Return True while the lock screen UI is on screen."""
-	import ctypes
-	from ctypes import wintypes
-
-	found = []
-	callbackType = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
-
-	def _callback(hwnd, _lparam):
-		try:
-			if winUser.getClassName(hwnd) in _LOCK_SCREEN_CLASSES:
-				found.append(hwnd)
-		except Exception:
-			log.debugWarning("NaturalScrolling: could not read a window class", exc_info=True)
-		return True
-
-	try:
-		ctypes.windll.user32.EnumWindows(callbackType(_callback), 0)
-	except Exception:
-		log.debugWarning("NaturalScrolling: could not enumerate windows", exc_info=True)
-		return True
-	return bool(found)
 
 #: Fixed amount of wheel ticks for sequential two-finger flicks, where no
 #: reliable velocity is available.
@@ -223,9 +186,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._restorePosition = None
 		self._touchReleasedForLock = False
 		self._lockPollGeneration = 0
-		self._narratorProcess = None
-		self._narratorWatchGeneration = 0
-		self._locked = False
 		self._hook = touchhook.TouchHook(
 			isEnabled=lambda: config.conf[ADDON_SECTION]["follow"],
 			getPixelsPerTick=lambda: config.conf[ADDON_SECTION]["followPixelsPerTick"],
@@ -239,12 +199,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def terminate(self):
 		security.post_sessionLockStateChanged.unregister(self._onSessionLockStateChanged)
-		if self._narratorProcess is not None:
-			try:
-				self._narratorProcess.terminate()
-			except Exception:
-				log.debugWarning("NaturalScrolling: could not stop Narrator", exc_info=True)
-			self._narratorProcess = None
 		if self._hook is not None:
 			self._hook.terminate()
 			self._hook = None
@@ -257,61 +211,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		super().terminate()
 
 	def _onSessionLockStateChanged(self, isNowLocked):
-		"""Hand the lock screen over to Narrator.
+		"""Release touch while the session is locked and restore it afterwards.
 
-		NVDA's touch capture blocks the sign-in UI, so while the session is
-		locked NVDA releases touch and Narrator is started; Narrator speaks the
-		lock screen and can use the PIN pad. On unlock Narrator is stopped again
-		and NVDA takes over touch.
+		Windows needs the touch to show the sign-in screen and the PIN pad, so
+		NVDA gives it up for the locked period. No speech is available on the
+		lock screen in this configuration, by design.
 		"""
 		try:
 			self._cancelAnimation()
-			self._locked = isNowLocked
 			if isNowLocked:
 				if touchHandler.handler is not None and config.conf["touch"]["enabled"]:
 					touchHandler.setTouchSupport(False)
-					log.info("NaturalScrolling: touch released for Narrator on the lock screen")
-				self._narratorWatchGeneration += 1
-				self._startNarrator()
-				core.callLater(2000, self._watchNarrator, self._narratorWatchGeneration)
-			else:
-				self._narratorWatchGeneration += 1
-				self._stopNarrator()
+					self._touchReleasedForLock = True
+					log.info("NaturalScrolling: touch released while the session is locked")
+			elif self._touchReleasedForLock:
+				self._touchReleasedForLock = False
 				if touchHandler.handler is None and config.conf["touch"]["enabled"]:
 					touchHandler.setTouchSupport(True)
 					log.info("NaturalScrolling: touch restored after unlock")
 		except Exception:
-			log.exception("NaturalScrolling: session lock handling failed")
-
-	def _startNarrator(self):
-		if self._narratorProcess is not None and self._narratorProcess.poll() is None:
-			return
-		try:
-			self._narratorProcess = subprocess.Popen([NARRATOR_PATH])
-			log.info("NaturalScrolling: Narrator started for the lock screen")
-		except Exception:
-			self._narratorProcess = None
-			log.exception("NaturalScrolling: could not start Narrator")
-
-	def _stopNarrator(self):
-		if self._narratorProcess is None:
-			return
-		try:
-			if self._narratorProcess.poll() is None:
-				self._narratorProcess.terminate()
-				self._narratorProcess.wait(timeout=5)
-		except Exception:
-			log.debugWarning("NaturalScrolling: could not stop Narrator", exc_info=True)
-		self._narratorProcess = None
-		log.info("NaturalScrolling: Narrator stopped after unlock")
-
-	def _watchNarrator(self, generation):
-		if generation != self._narratorWatchGeneration or not self._locked:
-			return
-		if self._narratorProcess is None or self._narratorProcess.poll() is not None:
-			log.info("NaturalScrolling: Narrator gone while locked, restarting")
-			self._startNarrator()
-		core.callLater(2000, self._watchNarrator, generation)
+			log.exception("NaturalScrolling: could not change touch support on session lock")
 
 	def _onGesture(self, gesture):
 		# Touch hovers fire right after the fingers lift and must not stop the

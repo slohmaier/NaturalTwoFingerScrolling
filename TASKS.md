@@ -30,9 +30,9 @@
 - 2026-11-22: Published release v0.2.1 with the packaged add-on attached.
 - 2026-11-24: 0.2.2: releases touch support while the session is locked and
   restores it on unlock, so Windows can handle the lock screen swipe and PIN.
-- 2026-11-24: 0.2.4/0.2.5/0.2.6: lock screen handover to Windows Narrator.
-  On lock: touch released, Narrator started. On unlock: Narrator stopped, touch
-  restored. Narrator is restarted every 2 s if it exits while locked.
+- 2026-11-24: 0.2.7: Narrator handover removed at user request. On lock: touch
+  released so Windows handles the swipe and PIN pad; no speech at the PIN
+  field by design. Narrator no longer started.
 
 ## Open
 
