@@ -27,6 +27,20 @@ Python's `markdown` module for the readme HTML.
 - `buildVars.py` - add-on metadata and the list of source files.
 - Generated and git-ignored: `.mo`, `.html`, generated `.ini`, `.nvda-addon`.
 
+## Documentation location
+
+The canonical NVDA touch documentation - NVDA configuration, Windows settings,
+gestures, cheat sheets and the deployable `.nvdaprofile` - lives outside this
+repository:
+
+`C:\Users\stefa\ownCloud\Personal\AppData\NVDATouch`
+
+When the add-on changes anything the touch setup depends on (gestures,
+swallowed gestures, pointer behaviour, calibration), update that folder first,
+then the pointers in `~/admin/AGENTS.md` and here. The folder is synced through
+ownCloud and is used to roll the setup out to other touch devices via
+`NVDAProfileManagerCLI.exe`.
+
 ## Conventions
 
 - Tabs for indentation, maximum line length 110 (see `flake8.ini`).
