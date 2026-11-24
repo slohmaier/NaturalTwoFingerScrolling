@@ -41,5 +41,7 @@
 - Check whether Brave honours partial wheel deltas; if not, use the full notch option.
 - Downgrade the `NaturalScrolling:` log lines from info to debug once tuning is done.
 - Verify that `enhancedTouchGestures` synth settings touch mode is not captured and that load order is irrelevant.
+- Track nvaccess/nvda#19973 (touch keyboard on the lock screen not routable).
+  If fixed upstream, revisit the lock-screen touch release and the silent PIN.
 - Publish to the NVDA Add-on Store once the add-on feels right.
 - Consider proposing kinetic touch scrolling upstream to NV Access.
