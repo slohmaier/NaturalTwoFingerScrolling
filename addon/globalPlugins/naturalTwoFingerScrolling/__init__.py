@@ -48,6 +48,39 @@ SCRCAT_TOUCH = _("Touch screen")
 _DIRECTION_KEYS = ("natural", "traditional")
 _POINTER_KEYS = ("keep", "restore", "off")
 
+#: Window classes of the Windows lock screen, see utils.security.
+_LOCK_SCREEN_CLASSES = frozenset(
+	{
+		"LockScreenInputOcclusionFrame",
+		"LockScreenControllerProxyWindow",
+		"LockScreenBackstopFrame",
+	}
+)
+
+
+def _lockScreenWindowsVisible():
+	"""Return True while the lock screen UI is on screen."""
+	import ctypes
+	from ctypes import wintypes
+
+	found = []
+	callbackType = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+
+	def _callback(hwnd, _lparam):
+		try:
+			if winUser.getClassName(hwnd) in _LOCK_SCREEN_CLASSES:
+				found.append(hwnd)
+		except Exception:
+			log.debugWarning("NaturalScrolling: could not read a window class", exc_info=True)
+		return True
+
+	try:
+		ctypes.windll.user32.EnumWindows(callbackType(_callback), 0)
+	except Exception:
+		log.debugWarning("NaturalScrolling: could not enumerate windows", exc_info=True)
+		return True
+	return bool(found)
+
 #: Fixed amount of wheel ticks for sequential two-finger flicks, where no
 #: reliable velocity is available.
 _SEQUENTIAL_TICKS = 4.0
@@ -185,6 +218,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._fullNotches = False
 		self._restorePosition = None
 		self._touchReleasedForLock = False
+		self._lockPollGeneration = 0
 		self._hook = touchhook.TouchHook(
 			isEnabled=lambda: config.conf[ADDON_SECTION]["follow"],
 			getPixelsPerTick=lambda: config.conf[ADDON_SECTION]["followPixelsPerTick"],
@@ -214,23 +248,47 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		The Windows lock screen does not receive touch while NVDA owns the
 		touch stream, so the swipe to reveal the sign-in screen never arrives.
-		Releasing touch for the locked period lets Windows handle it; touch is
-		restored on unlock.
+		Releasing touch lets Windows handle the swipe; as soon as the lock
+		screen windows are gone (the sign-in screen with the keypad is shown),
+		touch is restored so NVDA can explore and activate the keys.
 		"""
 		try:
 			if isNowLocked:
 				self._cancelAnimation()
+				self._lockPollGeneration += 1
 				if touchHandler.handler is not None and config.conf["touch"]["enabled"]:
 					touchHandler.setTouchSupport(False)
 					self._touchReleasedForLock = True
 					log.info("NaturalScrolling: touch released while the session is locked")
+					core.callLater(600, self._pollLockScreen, self._lockPollGeneration)
 			elif self._touchReleasedForLock:
-				self._touchReleasedForLock = False
-				if touchHandler.handler is None and config.conf["touch"]["enabled"]:
-					touchHandler.setTouchSupport(True)
-					log.info("NaturalScrolling: touch restored after unlock")
+				self._lockPollGeneration += 1
+				self._restoreTouchAfterLock("after unlock")
 		except Exception:
 			log.exception("NaturalScrolling: could not change touch support on session lock")
+
+	def _pollLockScreen(self, generation):
+		if generation != self._lockPollGeneration or not self._touchReleasedForLock:
+			return
+		try:
+			if not security.isLockScreenModeActive():
+				return
+			if _lockScreenWindowsVisible():
+				core.callLater(600, self._pollLockScreen, generation)
+				return
+		except Exception:
+			log.debugWarning("NaturalScrolling: lock screen probe failed", exc_info=True)
+			return
+		self._restoreTouchAfterLock("at the sign-in screen")
+
+	def _restoreTouchAfterLock(self, reason):
+		self._touchReleasedForLock = False
+		if touchHandler.handler is None and config.conf["touch"]["enabled"]:
+			try:
+				touchHandler.setTouchSupport(True)
+				log.info("NaturalScrolling: touch restored %s" % reason)
+			except Exception:
+				log.exception("NaturalScrolling: could not restore touch support")
 
 	def _onGesture(self, gesture):
 		# Touch hovers fire right after the fingers lift and must not stop the
