@@ -28,6 +28,8 @@
   accessibility action (for example Windows 11 taskbar icons).
 - 2026-11-22: Double tap and hold bound to a context menu at the touch point.
 - 2026-11-22: Published release v0.2.1 with the packaged add-on attached.
+- 2026-11-24: 0.2.2: releases touch support while the session is locked and
+  restores it on unlock, so Windows can handle the lock screen swipe and PIN.
 
 ## Open
 

@@ -23,6 +23,7 @@ import wx
 from gui.settingsDialogs import NVDASettingsDialog, SettingsPanel
 from logHandler import log
 from scriptHandler import script
+from utils import security
 from utils.security import objectBelowLockScreenAndWindowsIsLocked
 
 from . import momentum
@@ -183,6 +184,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._sign = 0
 		self._fullNotches = False
 		self._restorePosition = None
+		self._touchReleasedForLock = False
 		self._hook = touchhook.TouchHook(
 			isEnabled=lambda: config.conf[ADDON_SECTION]["follow"],
 			getPixelsPerTick=lambda: config.conf[ADDON_SECTION]["followPixelsPerTick"],
@@ -190,10 +192,12 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			onLift=self._onTouchLift,
 		)
 		self._hook.install()
+		security.post_sessionLockStateChanged.register(self._onSessionLockStateChanged)
 		inputCore.decide_executeGesture.register(self._onGesture)
 		NVDASettingsDialog.categoryClasses.append(NaturalScrollingPanel)
 
 	def terminate(self):
+		security.post_sessionLockStateChanged.unregister(self._onSessionLockStateChanged)
 		if self._hook is not None:
 			self._hook.terminate()
 			self._hook = None
@@ -204,6 +208,29 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		except ValueError:
 			pass
 		super().terminate()
+
+	def _onSessionLockStateChanged(self, isNowLocked):
+		"""Release touch while the session is locked.
+
+		The Windows lock screen does not receive touch while NVDA owns the
+		touch stream, so the swipe to reveal the sign-in screen never arrives.
+		Releasing touch for the locked period lets Windows handle it; touch is
+		restored on unlock.
+		"""
+		try:
+			if isNowLocked:
+				self._cancelAnimation()
+				if touchHandler.handler is not None and config.conf["touch"]["enabled"]:
+					touchHandler.setTouchSupport(False)
+					self._touchReleasedForLock = True
+					log.info("NaturalScrolling: touch released while the session is locked")
+			elif self._touchReleasedForLock:
+				self._touchReleasedForLock = False
+				if touchHandler.handler is None and config.conf["touch"]["enabled"]:
+					touchHandler.setTouchSupport(True)
+					log.info("NaturalScrolling: touch restored after unlock")
+		except Exception:
+			log.exception("NaturalScrolling: could not change touch support on session lock")
 
 	def _onGesture(self, gesture):
 		# Touch hovers fire right after the fingers lift and must not stop the
